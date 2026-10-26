@@ -157,6 +157,32 @@ void main() {
       }
     },
   );
+  test('sensitive capability paths never enter telemetry', () async {
+    final bodies = <String>[];
+    final t = AsodyaTracker(
+      appId: 'annotations',
+      baseUrl: 'https://api.example',
+      buildVersion: '1',
+      screens: const [
+        TrackingScreen(
+          name: 'instant',
+          route: '/instant/:code',
+          label: 'Shared room',
+          sensitivePath: true,
+        ),
+      ],
+      client: MockClient((r) async {
+        bodies.add(r.body);
+        return http.Response('{}', 202);
+      }),
+      autoFlush: false,
+    );
+    t.view('/instant/private-room-token');
+    await t.flush();
+    expect(bodies.single, isNot(contains('private-room-token')));
+    expect(bodies.single, contains('/instant/:code'));
+    t.dispose();
+  });
   testWidgets(
     'nearest mapped ancestor names a nested control without layout changes',
     (tester) async {
