@@ -70,7 +70,7 @@ class AsodyaTracker {
     final selected = matches.isEmpty ? currentScreen : matches.first;
     if (_screen == selected && _path == safe) return;
     _screen = selected;
-    _path = safe;
+    _path = selected.sensitivePath ? selected.route : safe;
     event('view', selected.surface);
   }
 

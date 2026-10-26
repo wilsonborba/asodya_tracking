@@ -26,7 +26,9 @@ class TrackingScreen {
     required this.name,
     required this.route,
     required this.label,
+    this.sensitivePath = false,
   });
+  final bool sensitivePath;
   final String name;
   final String route;
   final String label;
