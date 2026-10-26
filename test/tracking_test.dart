@@ -183,6 +183,23 @@ void main() {
     expect(bodies.single, contains('/instant/:code'));
     t.dispose();
   });
+  test(
+    'manual reports complete only when the errors endpoint accepts them',
+    () async {
+      final requests = <http.Request>[];
+      final t = tracker(
+        MockClient((r) async {
+          requests.add(r);
+          return http.Response('{}', requests.length == 1 ? 503 : 202);
+        }),
+      );
+      await expectLater(t.sendError('manual report'), throwsStateError);
+      await t.sendError('manual report');
+      expect(requests.length, 2);
+      expect(requests.last.url.path, '/apps/api/v1/telemetry/errors');
+      t.dispose();
+    },
+  );
   testWidgets(
     'nearest mapped ancestor names a nested control without layout changes',
     (tester) async {

@@ -99,6 +99,27 @@ class AsodyaTracker {
     _saveSession();
   }
 
+  /// A user-requested error report completes only after the gateway accepts it.
+  Future<void> sendError(
+    Object error, {
+    StackTrace? stack,
+    String type = 'ClientReport',
+  }) async {
+    final value = <String, dynamic>{
+      'app_id': appId,
+      'session_id': _session,
+      'route': _path,
+      'error_type': bounded(type, 100),
+      'message': privacy.clean(error.toString()),
+      'stack': privacy.clean(stack?.toString() ?? '', maxBytes: 8000),
+      'build_version': bounded(buildVersion, 80),
+    };
+    final response = await _post('errors', value);
+    if (response.statusCode != 202) {
+      throw StateError('Error report service unavailable');
+    }
+  }
+
   void error(Object error, StackTrace? stack, {String type = 'FlutterError'}) {
     if (_disposed) return;
     _errors.add({
