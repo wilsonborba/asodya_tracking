@@ -33,8 +33,10 @@ class TrackingRoot extends StatefulWidget {
     required this.tracker,
     required this.child,
     this.resolveElement,
+    this.locale,
   });
   final AsodyaTracker tracker;
+  final String? locale;
   final TrackingElement? Function(PointerUpEvent, HitTestResult)?
   resolveElement;
   final Widget child;
@@ -100,7 +102,11 @@ class _TrackingRootState extends State<TrackingRoot>
       widget.tracker.theme = Theme.of(context).brightness.name;
     }
     final locale = Localizations.maybeLocaleOf(context);
-    if (locale != null) widget.tracker.locale = locale.toLanguageTag();
+    if (widget.locale != null) {
+      widget.tracker.locale = widget.locale!;
+    } else if (locale != null) {
+      widget.tracker.locale = locale.toLanguageTag();
+    }
     return TrackingScope(
       tracker: widget.tracker,
       child: NotificationListener<ScrollNotification>(
