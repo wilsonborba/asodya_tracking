@@ -218,6 +218,34 @@ void main() {
     expect((batch['events'] as List).last['path'], '/article/rag');
     t.dispose();
   });
+  testWidgets('custom UI locale metadata does not change child localization', (
+    tester,
+  ) async {
+    final requests = <http.Request>[];
+    final t = tracker(
+      MockClient((r) async {
+        requests.add(r);
+        return http.Response('{}', 202);
+      }),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TrackingRoot(
+          tracker: t,
+          locale: 'th',
+          child: Builder(
+            builder: (context) =>
+                Text(Localizations.localeOf(context).languageCode),
+          ),
+        ),
+      ),
+    );
+    t.event('click', search);
+    await t.flush();
+    expect((jsonDecode(requests.single.body) as Map)['locale'], 'th');
+    expect(find.text('en'), findsOneWidget);
+    t.dispose();
+  });
   testWidgets(
     'declared semantic aliases map an existing control without editing it',
     (tester) async {
