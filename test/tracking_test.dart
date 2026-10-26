@@ -200,6 +200,69 @@ void main() {
       t.dispose();
     },
   );
+  test('explicit error routes are safe and do not change navigation', () async {
+    final requests = <http.Request>[];
+    final t = tracker(
+      MockClient((r) async {
+        requests.add(r);
+        return http.Response('{}', 202);
+      }),
+    );
+    t.view('/article/rag');
+    t.error('failure', null, route: '/callback?token=private');
+    t.event('click', search);
+    await t.flush();
+    final error = jsonDecode(requests.last.body) as Map;
+    expect(error['route'], '/callback');
+    final batch = jsonDecode(requests.first.body) as Map;
+    expect((batch['events'] as List).last['path'], '/article/rag');
+    t.dispose();
+  });
+  testWidgets(
+    'declared semantic aliases map an existing control without editing it',
+    (tester) async {
+      final requests = <http.Request>[];
+      final t = tracker(
+        MockClient((r) async {
+          requests.add(r);
+          return http.Response('{}', 202);
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TrackingRoot(
+            tracker: t,
+            resolveElement: (_, result) =>
+                elementFromSemantics(result, {'Existing control': search}),
+            child: Scaffold(
+              body: Column(
+                children: [
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text('Existing control'),
+                  ),
+                  const Text('Existing control'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Existing control').first);
+      await t.flush();
+      final batch = jsonDecode(requests.single.body) as Map;
+      expect((batch['events'] as List).single['element_id'], search.id);
+      requests.clear();
+      await tester.tap(find.text('Existing control').last);
+      await t.flush();
+      final surface = jsonDecode(requests.single.body) as Map;
+      expect(
+        (surface['events'] as List).single['element_id'],
+        'article.surface',
+      );
+      t.dispose();
+    },
+  );
   testWidgets(
     'nearest mapped ancestor names a nested control without layout changes',
     (tester) async {

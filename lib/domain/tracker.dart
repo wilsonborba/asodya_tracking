@@ -120,12 +120,25 @@ class AsodyaTracker {
     }
   }
 
-  void error(Object error, StackTrace? stack, {String type = 'FlutterError'}) {
+  String _safeErrorRoute(String route) {
+    final path = routePath(route);
+    final sensitive = screens.where(
+      (screen) => screen.sensitivePath && screen.matches(path),
+    );
+    return sensitive.isEmpty ? path : sensitive.first.route;
+  }
+
+  void error(
+    Object error,
+    StackTrace? stack, {
+    String type = 'FlutterError',
+    String? route,
+  }) {
     if (_disposed) return;
     _errors.add({
       'app_id': appId,
       'session_id': _session,
-      'route': _path,
+      'route': route == null ? _path : _safeErrorRoute(route),
       'error_type': bounded(type, 100),
       'message': privacy.clean(error.toString()),
       'stack': privacy.clean(stack?.toString() ?? '', maxBytes: 8000),

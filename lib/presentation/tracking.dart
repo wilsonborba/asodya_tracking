@@ -28,8 +28,15 @@ class TrackedElement extends StatelessWidget {
 }
 
 class TrackingRoot extends StatefulWidget {
-  const TrackingRoot({super.key, required this.tracker, required this.child});
+  const TrackingRoot({
+    super.key,
+    required this.tracker,
+    required this.child,
+    this.resolveElement,
+  });
   final AsodyaTracker tracker;
+  final TrackingElement? Function(PointerUpEvent, HitTestResult)?
+  resolveElement;
   final Widget child;
   @override
   State<TrackingRoot> createState() => _TrackingRootState();
@@ -78,7 +85,9 @@ class _TrackingRootState extends State<TrackingRoot>
     }
     widget.tracker.event(
       'click',
-      element ?? widget.tracker.currentScreen.surface,
+      element ??
+          widget.resolveElement?.call(event, result) ??
+          widget.tracker.currentScreen.surface,
     );
   }
 
@@ -231,4 +240,40 @@ class TrackedSubmit extends StatelessWidget {
             },
     ),
   );
+}
+
+/// Maps existing controls through declared, localized labels. Never exposes widget ids.
+/// Non-interactive text is not treated as a control. Useful for shared legacy headers.
+TrackingElement? elementFromSemantics(
+  HitTestResult result,
+  Map<String, TrackingElement> aliases,
+) {
+  var interactive = false;
+  final labels = <String>[];
+  for (final entry in result.path) {
+    final target = entry.target;
+    if (target is RenderParagraph) labels.add(target.text.toPlainText());
+    if (target is RenderSemanticsAnnotations) {
+      final properties = target.properties;
+      interactive =
+          interactive ||
+          properties.button == true ||
+          properties.link == true ||
+          properties.onTap != null;
+      if (properties.label != null) labels.add(properties.label!);
+      if (properties.tooltip != null) labels.add(properties.tooltip!);
+    }
+    if (target is RenderSemanticsGestureHandler && target.onTap != null) {
+      interactive = true;
+    }
+  }
+  if (!interactive) return null;
+  final normalized = {
+    for (final e in aliases.entries) e.key.trim().toLowerCase(): e.value,
+  };
+  for (final label in labels) {
+    final found = normalized[label.trim().toLowerCase()];
+    if (found != null) return found;
+  }
+  return null;
 }

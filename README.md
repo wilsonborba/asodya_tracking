@@ -68,3 +68,10 @@ flutter pub get
 flutter analyze
 flutter test
 ```
+
+For an existing shared component that cannot be edited, `TrackingRoot.resolveElement`
+can use `elementFromSemantics` with declared localized label aliases. The helper
+accepts interactive hits only. It never sends widget identifiers or arbitrary labels.
+Explicit `TrackedElement` metadata takes priority. Include aliases in the app manifest.
+An error can supply a route override; it is sanitized without changing navigation.
+`sendError` waits for gateway acceptance for user-requested reports.
